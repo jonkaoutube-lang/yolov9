@@ -18,9 +18,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      # This step is essential: it downloads your repository's code (your forked yolov9)
       uses: actions/checkout@v4
-      # Note: This puts the code in the root of the workspace /home/runner/work/yolov9/yolov9
 
     - name: Run Docker Build Command
       run: |
@@ -40,8 +38,8 @@ jobs:
         ARG MODEL_SIZE
         ARG IMG_SIZE
 
-        # CORRECTED LINE: Using the full HTTPS URL
-        RUN wget github.com\${MODEL_SIZE}-converted.pt -O yolov9-\${MODEL_SIZE}.pt
+        # THIS IS THE CORRECTED LINE
+        RUN wget https://github.com/WongKinYiu/yolov9/releases/download/v0.1/yolov9-\${MODEL_SIZE}-converted.pt -O yolov9-\${MODEL_SIZE}.pt
 
         RUN sed -i "s/ckpt = torch.load(attempt_download(w), map_location='cpu')/ckpt = torch.load(attempt_download(w), map_location='cpu', weights_only=False)/g" models/experimental.py
         RUN python3 export.py --weights ./yolov9-\${MODEL_SIZE}.pt --imgsz \${IMG_SIZE} --simplify --include onnx
@@ -64,3 +62,4 @@ jobs:
         name: yolov9-onnx-model
         path: |
           *.onnx
+
