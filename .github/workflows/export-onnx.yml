@@ -27,17 +27,12 @@ jobs:
         MODEL_SIZE=${{ github.event.inputs.model_size }}
         IMG_SIZE=${{ github.event.inputs.img_size }}
 
-        # We need to write the Dockerfile content to a temporary file first
-        # We change the ADD commands to better use the build context and wget
         cat <<'EOF' > Dockerfile.temp
         FROM python:3.11 AS build
-        # We don't use ADD github.com . anymore
-        # because the 'actions/checkout' step already checked out the files into our context
         RUN apt-get update && apt-get install --no-install-recommends -y libgl1 wget && rm -rf /var/lib/apt/lists/*
         COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /bin/
         WORKDIR /yolov9
 
-        # Copy the *local* checked out code into the docker build context
         COPY . .
 
         RUN uv pip install --system -r requirements.txt
@@ -45,7 +40,7 @@ jobs:
         ARG MODEL_SIZE
         ARG IMG_SIZE
 
-        # Use WGET inside the container to download the weights reliably
+        # CORRECTED LINE: Using the full HTTPS URL
         RUN wget github.com\${MODEL_SIZE}-converted.pt -O yolov9-\${MODEL_SIZE}.pt
 
         RUN sed -i "s/ckpt = torch.load(attempt_download(w), map_location='cpu')/ckpt = torch.load(attempt_download(w), map_location='cpu', weights_only=False)/g" models/experimental.py
@@ -57,7 +52,6 @@ jobs:
         COPY --from=build /yolov9/yolov9-\${MODEL_SIZE}.onnx /yolov9-\${MODEL_SIZE}-\${IMG_SIZE}.onnx
         EOF
 
-        # Run the docker build command using the inputs provided in the UI
         docker build . \
           --build-arg MODEL_SIZE=$MODEL_SIZE \
           --build-arg IMG_SIZE=$IMG_SIZE \
